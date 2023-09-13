@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <script src="gameControl.js"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MarioWithSwords</title>
@@ -8,7 +9,31 @@
 </head>
 <body>
     <canvas name="gameView" id="gameView"></canvas>
-    <img src="character.png.png" id="character">
-    <script src="gameControl.js"></script>
+    <img src="/images/character_left.png" id="character_left">
+    <img src="/images/character_right.png" id="character_right">
+    <img src="/images/guard_left.png" id="guard_left">
+    <img src="/images/guard_right.png" id="guard_right">
+    <img src="/images/guard_right.png" id="guard_right">
+    <img src="/images/sword.png" id="sword">
+    <img src="/images/bullet.png" id="playerBullet">
+    <img src="/images/shield (1).png" id="shield">
+    <img src="/images/shield (2).png" id="brokenShield">
+    <img src="/images/tower.png" id="tower">
+    <img src="/images/towerBullet.png" id="towerBullet">
+    
+   
+<div id="show">
+    <button class="button-18" onclick="showtips()"role="button">how to play??</button>
+</div>
+
+
+   <div id="tips" style="display: none;">
+    <h2><bold> How to play?</bold></h2>
+    <p>* Use "a" to move Left and "d" to move Right</p>
+    <p>* Use "space" to jump</p>
+    <p>* Use "x" together with Left or Right to Sprint/Run</p>
+    <p>* Use "w" to use long range attack and "e" for Meele range attack</p>
+    <p>* (The Guard protects the level defeat it to move out!!)</p>
+   </div>
 </body>
 </html>

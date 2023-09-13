@@ -1,10 +1,22 @@
+function showtips()
+{
+   var show = document.getElementById("tips");
+   if (show.style.display === "none") {
+    show.style.display = "block";
+  } else {
+    show.style.display = "none";
+  }
+}
+
 window.addEventListener('load',function(){ // runs only after all resources are loaded
 const canvas = document.getElementById("gameView");
 const contex = canvas.getContext('2d');//initalizes the cannvas /game view
 
+
 // height and witdth of the canvas
 canvas.width = 1500;
 canvas.height= 500;
+
 
 class InputHandler// handels all player inpusts
 
@@ -27,6 +39,7 @@ constructor(Game){
         else if(e.key === "w")
         {
             this.game.player.longRang();
+            
         } 
         if(e.key === "e")
         {
@@ -51,11 +64,12 @@ class Projectile
 {
 constructor(game,x,y)
 {
+    this.playerBullet = document.getElementById("playerBullet");
     this.game = game;
     this.x = x;
     this.y = y;
     this.width= 20;
-    this.height =20;
+    this.length =20;
     this.speed= 10;
     this.initposX=x;
     this.deleteProjectile = false;
@@ -76,16 +90,40 @@ Draw(Context)
 {
     
     Context.fillStyle="red";
-    Context.fillRect(this.x,this.y,this.width,this.height);
-
+    
+    Context.drawImage(this.playerBullet,this.x,this.y);
 }
 
+}
+class MeeleRange 
+{
+    constructor(game)
+    {
+        this.sword = document.getElementById("sword");
+        this.game = game;
+        this.width = 25;
+        this.x= this.game.x + 50;
+        this.y = this.game.y;
+        this.length =50;
+    }
+    Update()
+    {
+        this.x= this.game.x + 50;
+        this.y = this.game.y;
+        
+    }
+    Draw(Context)
+    { 
+        
+        Context.drawImage(this.sword,this.x,this.y);
+    }
 }
 class Player
 {
     constructor(Game)
     {
-        
+        this.character_left = document.getElementById('character_left');
+        this.character_right = document.getElementById('character_right');
         this.game = Game;
         this.width = 50;
         this.length = 50;
@@ -98,11 +136,15 @@ class Player
         this.isGrounded = true;
         this.jumpUp = false;
         this.RangedAttacks = [];
+        this.meeleRange = new MeeleRange(this);
+        
+        
       
     }
     Update()
     {
-    if(this.game.pressedKey.includes('x'))
+    if(this.game.pressedKey.includes('x') && (this.game.pressedKey.includes('a') ||
+    this.game.pressedKey.includes('d')))
     {
         
         if(this.game.stamina > 0)
@@ -125,10 +167,12 @@ class Player
     if(this.game.pressedKey.includes('d') && this.x < canvas.width-this.width)
     {
         this.x += this.Speed;
+        this.game.charcterDirection=true;
     }
     else if(this.game.pressedKey.includes('a') && this.x > 0)
     {
         this.x -= this.Speed;
+        this.game.charcterDirection=false;
     }
     if(((this.game.pressedKey.includes(' ') && this.isGrounded === true) && this.y >= 450)||
      (this.isGrounded === false && this.jumpUp === false))
@@ -158,7 +202,18 @@ class Player
     {
         
         this.RangedAttacks.forEach(Projectile => {
+            
+            if(this.game.checkCollision(this.game.guard,Projectile))
+            { 
+                Projectile.deleteProjectile = true;
+                
+            }
             Projectile.Update();
+            
+            if(this.game.checkCollision(this.game.trigger,Projectile))
+            {
+                this.game.trigger.isShielded = false;
+            }
             
 
     
@@ -166,22 +221,48 @@ class Player
     }
     
     this.RangedAttacks =this.RangedAttacks.filter(Projectile =>!Projectile.deleteProjectile);
+//meele attack for gard
+
+    if(!this.game.trigger.isShielded  &&  this.game.meeleAttack === true)
+    {
+        
+        if(this.game.checkCollision(this.game.guard,this.meeleRange)) 
+        {
+                this.game.trigger.isShielded =true;
+                this.game.guard.guardLives -=1;
+                if(this.game.guard.guardLives <0)
+                {
+                    this.game.gameComplete = true;
+                }
+        }
+    }
+    
+
 
     }
 
     Draw(Context)
     {
-        Context.fillStyle = "green";
-        Context.fillRect(this.x, this.y, this.width, this.length);
         
+       if(!this.game.charcterDirection)
+       {
+        Context.drawImage(this.character_left,this.x,this.y);
+       }
+       else
+       {
+        Context.drawImage(this.character_right,this.x,this.y);
+       }
+        this.meeleRange.Update();
         this.RangedAttacks.forEach(Projectile => {
             Projectile.Draw(Context);
         });
       
         if( this.game.meeleAttack === true)
         {
-            Context.fillStyle = "red";
-            Context.fillRect(this.x+50, this.y, this.width -25 , this.length);
+            
+            
+            this.meeleRange.Draw(Context);
+            
             if(this.game.meeletime >30 )
             {
                 this.game.meeletime=0;
@@ -209,33 +290,184 @@ class Player
    
 
 }
+class EnemyProjectile extends Projectile
+{
+    constructor(game,x,y)
+    {
+        super(game,x,y);
+        this.towerBullet = document.getElementById("towerBullet");
+        this.speed =3;
+    }
+    Update()
+{
+    
+    this.x -=this.speed;
+    
+    if(this.x < this.initposX - 500)
+    {
+        this.deleteProjectile =true;
+        
+    }
+
+}
+Draw(Context)
+{
+  
+    Context.drawImage(this.towerBullet,this.x-30,this.y);
+}
+}
+
 class EnemyTower
 {
-constructor(game)
+constructor(Game)
 {
-    this.game = game;
+    this.tower = document.getElementById("tower");
+    this.game = Game;
     this.width =20;
     this.length = 80;
-    this.x = 500;
+    this.x = 700;
     this.y = canvas.height - this.length;
-      
     this.EnemyAttack =[];
+    this.enemeyAttack();
+   
 }
 
 Update()
 {
- 
+    if(this.EnemyAttack.length >0)
+    {
+        
+        this.EnemyAttack.forEach(EnemyProjectile => {
+           
+           
+            if(this.game.checkCollision(this.game.player,EnemyProjectile))
+            {
+             
+                EnemyProjectile.deleteProjectile =true;
+                
+                this.game.gameOver();
+                
+            }
+            EnemyProjectile.Update(); 
+        });
+    }
+    
+    this.EnemyAttack =this.EnemyAttack.filter(EnemyProjectile =>!EnemyProjectile.deleteProjectile);
 }
 Draw(Context)
 {
-    Context.fillStyle = "red";
-    Context.fillRect(this.x, this.y, this.width, this.length);
+
+    Context.drawImage(this.tower,this.x-30,this.y+10);
+    this.EnemyAttack.forEach(EnemyProjectile => {
+        EnemyProjectile.Draw(Context);
+    });
+}
+
+enemeyAttack(){
+        
+   
+      this.EnemyAttack.push(new EnemyProjectile(this.game,this.x,this.y+15));
+      this.EnemyAttack.push(new EnemyProjectile(this.game,this.x,this.y+50));
+
+      
+
+  }
+
+
+}
+class Guard
+{
+constructor(game)
+{
+this.guard_left = document.getElementById("guard_left");
+this.guard_right = document.getElementById("guard_right");
+this.game = game;
+this.width = 50;
+this.length = 50;
+this.x = 1000;
+this.y = canvas.height - this.length;
+this.initposX =this.x;
+this.direction=true;
+this.speed=3;
+this.maxmove =200;
+this.guardLives = 0;
+
+}
+Update()
+{
+    if(this.x >=(this.initposX + this.maxmove * 2))
+    {
+        this.direction = false;
+    }
+    else if(this.x <=(this.initposX - this.maxmove))
+    {
+        this.direction = true;
+    }
+if(this.direction)
+{
+this.x +=this.speed;
+}
+else
+{
+    this.x -=this.speed;
+}
+if(this.game.checkCollision(this.game.player, this))
+{ 
+   
+    if(!this.game.gameComplete)
+{
+    this.game.gameOver();
+}
+}
+}
+Draw(Context)
+{
+ 
+
+    
+  if(!this.direction)
+  {
+    Context.drawImage(this.guard_left,this.x,this.y);
+  }
+  else
+  {
+    Context.drawImage(this.guard_right,this.x,this.y);
+  }
+    
 }
 
 
 
 }
-
+class Trigger 
+{
+    constructor(game)
+    {
+        this.shield = document.getElementById("shield");
+        this.brokenShield = document.getElementById("brokenShield");
+        this.game = game;
+        this.width = 40;
+        this.length = 40;
+        this.x = canvas.width - this.width;
+        this.y = canvas.height - this.length - 125;
+        this.removeShieldTimer = 0 ;
+        this.removeShieldinterval = 5 * 1000;
+        this.isShielded = true;
+    }
+    Draw(Context)
+    {
+        if(!this.isShielded)
+        {
+            Context.drawImage(this.brokenShield,this.x,this.y);
+        }
+        else
+        {
+            Context.drawImage(this.shield,this.x,this.y);
+        }
+       
+        
+    }
+}
 class Layer
 {
 
@@ -251,8 +483,8 @@ class PlayerUI
     this.game = game;
     this.fontSize = 20;
     this.fontFamily= "inkfree";
-    this.manaColor = "blue";
-    this.staminaColor = "grey";
+    this.manaColor = "cyan";
+    this.staminaColor = "white";
     
 
  }
@@ -284,6 +516,8 @@ class Game
         this.inputHandler = new InputHandler(this);
         this.playerUI = new PlayerUI(this);
         this.enemyTower = new EnemyTower(this);
+        this.guard = new Guard(this);
+        this.trigger = new Trigger(this);
         this.pressedKey = [];
         this.mana = 5;
         this.manaRegenInterval =2000;
@@ -295,10 +529,15 @@ class Game
         this.staminaRegenTimer=0;
         this.meeleAttack = false;
         this.meeletime= 0;
+        this.enemyAttackTimer=0;
+        this.enemyAttackInterval =2000 ;
+        this.gameComplete = false;
+        this.charcterDirection = true;
     }
     Update(deltaTime)
     {
         this.player.Update();
+        this.guard.Update();
         //for mana regen
     
         if(this.manaRegenTimer> this.manaRegenInterval)
@@ -332,7 +571,40 @@ class Game
         this.stamina=this.maxStamina;
        }
     //===
+    //for emeny attack 
+    if(this.enemyAttackTimer> this.enemyAttackInterval)
+    {
+       
+        this.enemyTower.enemeyAttack();
+        this.enemyAttackTimer =0;
+        
+    } 
+    else
+    {
+        this.enemyAttackTimer+=deltaTime;
+    }
+    this.enemyTower.Update();
+
+       //
+       // remove shiled
+       if(this.trigger.removeShieldTimer> this.trigger.removeShieldinterval)
+       {
+          
+           this.trigger.isShielded = true;
+           this.trigger.removeShieldTimer = 0;
+           
+       } 
+       else
+       {
+           this.trigger.removeShieldTimer +=deltaTime;
+       }
+       //game end conditon
       
+       if(this.gameComplete && this.player.x >(canvas.width - this.player.width -20))
+       {
+        this.gameFinished();
+        this.gameComplete = false;
+       }
 
     }
     Draw(Context)
@@ -340,18 +612,40 @@ class Game
         this.player.Draw(Context);
         this.playerUI.Draw(Context);
         this.enemyTower.Draw(Context);
+       if (!this.gameComplete)
+    {
+        this.guard.Draw(Context);
+    }
+        this.trigger.Draw(Context);
     }
      checkCollision(obj1,obj2)
        {
+      
         return(
                 obj1.x < obj2.x + obj2.width &&
                 obj1.x + obj1.width > obj2.x &&
-                obj1.y < obj2.y + obj2.height &&
-                obj1.y + obj1.height > obj2
+                obj1.y < obj2.y + obj2.length &&
+                obj1.y + obj1.length > obj2.y
                  
 
         );
+       
        } 
+       gameOver(){
+        window.location.reload();
+       
+       }
+       gameFinished(){
+        if(confirm("YOU HAVE FINISHED THE LEVEL!! Do you want to play again??"))
+        {
+            window.location.reload();
+        }
+        else
+        {
+            window.close();
+        }
+
+       }
 }
 
 const game = new Game(canvas.width, canvas.height);
@@ -369,5 +663,7 @@ let lastTime =0;
  }
 
  playGame(0);
+
+
 
 });
