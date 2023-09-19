@@ -6,6 +6,7 @@ function showtips()
   } else {
     show.style.display = "none";
   }
+  document.activeElement.blur();
 }
 
 window.addEventListener('load',function(){ // runs only after all resources are loaded
@@ -69,7 +70,7 @@ constructor(game,x,y)
     this.x = x;
     this.y = y;
     this.width= 20;
-    this.length =20;
+    this.length =10;
     this.speed= 10;
     this.initposX=x;
     this.deleteProjectile = false;
@@ -88,10 +89,10 @@ Update()
 }
 Draw(Context)
 {
-    
+  
     Context.fillStyle="red";
     
-    Context.drawImage(this.playerBullet,this.x,this.y);
+    Context.drawImage(this.playerBullet,this.x,this.y-5);
 }
 
 }
@@ -125,8 +126,8 @@ class Player
         this.character_left = document.getElementById('character_left');
         this.character_right = document.getElementById('character_right');
         this.game = Game;
-        this.width = 50;
-        this.length = 50;
+        this.width = 35;
+        this.length = 45;
         this.x = 10;
         this.y = 450;
         this.moveSpeed = 3;
@@ -226,12 +227,13 @@ class Player
     if(!this.game.trigger.isShielded  &&  this.game.meeleAttack === true)
     {
         
-        if(this.game.checkCollision(this.game.guard,this.meeleRange)) 
+        if(this.game.checkCollision(this.game.guard,this.meeleRange) && this.game.guard.guardLives >=0) 
         {
                 this.game.trigger.isShielded =true;
                 this.game.guard.guardLives -=1;
                 if(this.game.guard.guardLives <0)
                 {
+                    
                     this.game.gameComplete = true;
                 }
         }
@@ -243,7 +245,7 @@ class Player
 
     Draw(Context)
     {
-        
+       
        if(!this.game.charcterDirection)
        {
         Context.drawImage(this.character_left,this.x,this.y);
@@ -297,6 +299,7 @@ class EnemyProjectile extends Projectile
         super(game,x,y);
         this.towerBullet = document.getElementById("towerBullet");
         this.speed =3;
+        this.x= this.x -30
     }
     Update()
 {
@@ -312,8 +315,8 @@ class EnemyProjectile extends Projectile
 }
 Draw(Context)
 {
-  
-    Context.drawImage(this.towerBullet,this.x-30,this.y);
+    
+    Context.drawImage(this.towerBullet,this.x,this.y-5);
 }
 }
 
@@ -390,7 +393,7 @@ this.initposX =this.x;
 this.direction=true;
 this.speed=3;
 this.maxmove =200;
-this.guardLives = 0;
+this.guardLives = 2;
 
 }
 Update()
@@ -468,14 +471,8 @@ class Trigger
         
     }
 }
-class Layer
-{
 
-}
-class Background 
-{
 
-}
 class PlayerUI
 {
  constructor (game)
@@ -502,9 +499,28 @@ class PlayerUI
     }
  }
 }
-class EnemyStats
+class GuardUI
 {
+    constructor (game)
+    {
+       this.game = game;
+       this.fontSize = 20;
+       this.fontFamily= "inkfree";
+        this.guardLive = "#660000";
 
+       
+   
+    }
+    Draw(Context){
+        Context.fillStyle= this.guardLive; 
+        Context.strokeStyle="white";
+       console.log();
+       for(let i=0; i<this.game.guard.guardLives+1; i++)
+       {
+           Context.fillRect(700+ 20 * i,50,12,12);
+           Context.strokeRect(700+ 20 * i,50, 10,10);
+       }
+}
 }
 class Game
 {
@@ -515,6 +531,7 @@ class Game
         this.player = new Player(this);
         this.inputHandler = new InputHandler(this);
         this.playerUI = new PlayerUI(this);
+        this.guardUI = new GuardUI(this);
         this.enemyTower = new EnemyTower(this);
         this.guard = new Guard(this);
         this.trigger = new Trigger(this);
@@ -612,6 +629,7 @@ class Game
         this.player.Draw(Context);
         this.playerUI.Draw(Context);
         this.enemyTower.Draw(Context);
+        this.guardUI.Draw(Context);
        if (!this.gameComplete)
     {
         this.guard.Draw(Context);
